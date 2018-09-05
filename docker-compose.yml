@@ -1,0 +1,7 @@
+version: "3.4"
+
+services:
+  app:
+    build: .
+    command: mix run --no-halt
+    env_file: .env
