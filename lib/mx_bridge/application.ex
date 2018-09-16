@@ -17,7 +17,7 @@ defmodule MxBridge.Application do
     Supervisor.start_link(children, strategy: :one_for_one, name: MxBridge.Supervisor)
   end
 
-  #def stop(_) do
-    #System.stop
-  #end
+  def stop(_) do
+    System.stop
+  end
 end
