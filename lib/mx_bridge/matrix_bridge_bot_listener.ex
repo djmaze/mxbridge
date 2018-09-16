@@ -12,12 +12,9 @@ defmodule MxBridge.MatrixBridgeBotListener do
 
   @impl true
   def init(session = %Matrix.Session{}) do
-    # Swallow old events
-    events = Matrix.Client.events!(session, nil)
-    from = events.next_batch
-
     GenServer.cast(self(), :poll_matrix)
-    {:ok, %{session: session, from: from}}
+
+    {:ok, %{session: session, from: nil}}
   end
 
   # GenServer callbacks
@@ -28,17 +25,17 @@ defmodule MxBridge.MatrixBridgeBotListener do
     try do
       events = Matrix.Client.events!(session, from)
 
-      state = Map.put state, :from, events.next_batch
+      if from != nil do     # Skip sending messages if this was just the first catch-up request
+        message_events = (events.events
+                          |> Enum.reject(fn (e) -> e.sender == session.user_id end))
 
-      message_events = (events.events
-                        |> Enum.reject(fn (e) -> e.sender == session.user_id end))
-
-      MatrixBridgeBot.new_message_events(message_events)
+        MatrixBridgeBot.new_message_events(message_events)
+      end
 
       # Poll again for events
       GenServer.cast(self(), :poll_matrix)
 
-      {:noreply, state}
+      {:noreply, %{state | from: events.next_batch}}
     rescue
       e in HTTPoison.Error ->
         case e.reason do
@@ -49,6 +46,10 @@ defmodule MxBridge.MatrixBridgeBotListener do
             Logger.error("Trying again in 10 seconds..")
             :timer.sleep(10000)
         end
+      e in Poison.SyntaxError ->
+          Logger.error("HTTP error: " <> Atom.to_string(e.message))
+          Logger.error("Trying again in 10 seconds..")
+          :timer.sleep(10000)
 
         # Poll again for events
         GenServer.cast(self(), :poll_matrix)
