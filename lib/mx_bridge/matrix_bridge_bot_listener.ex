@@ -47,7 +47,7 @@ defmodule MxBridge.MatrixBridgeBotListener do
             :timer.sleep(10000)
         end
       e in Poison.SyntaxError ->
-          Logger.error("HTTP error: " <> Atom.to_string(e.message))
+          Logger.error("HTTP error: " <> e.message)
           Logger.error("Trying again in 10 seconds..")
           :timer.sleep(10000)
 
