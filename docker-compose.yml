@@ -5,3 +5,9 @@ services:
     build: .
     command: mix run --no-halt
     env_file: .env
+    networks:
+      - bridge
+
+networks:
+  bridge:
+    external: true
