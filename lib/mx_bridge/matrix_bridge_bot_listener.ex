@@ -34,7 +34,6 @@ defmodule MxBridge.MatrixBridgeBotListener do
 
       # Poll again for events
       GenServer.cast(self(), :poll_matrix)
-
       {:noreply, %{state | from: events.next_batch}}
     rescue
       e in HTTPoison.Error ->
@@ -46,14 +45,18 @@ defmodule MxBridge.MatrixBridgeBotListener do
             Logger.error("Trying again in 10 seconds..")
             :timer.sleep(10000)
         end
-      e in Poison.SyntaxError ->
-          Logger.error("HTTP error: " <> e.message)
-          Logger.error("Trying again in 10 seconds..")
-          :timer.sleep(10000)
 
         # Poll again for events
         GenServer.cast(self(), :poll_matrix)
+        {:noreply, state}
 
+      e in Poison.SyntaxError ->
+        Logger.error("HTTP error: " <> e.message)
+        Logger.error("Trying again in 10 seconds..")
+        :timer.sleep(10000)
+
+        # Poll again for events
+        GenServer.cast(self(), :poll_matrix)
         {:noreply, state}
     end
   end
